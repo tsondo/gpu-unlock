@@ -54,6 +54,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: ubuntu:22.04  # 5.15
+            setup: apt-get update -q && apt-get install -qy --no-install-recommends ca-certificates git
+          - image: almalinux:9   # 5.14 with backported DRM
+            setup: dnf install -qy git
           - image: debian:12   # 6.1
             setup: apt-get update -q && apt-get install -qy --no-install-recommends ca-certificates git
           - image: ubuntu:24.04  # 6.8

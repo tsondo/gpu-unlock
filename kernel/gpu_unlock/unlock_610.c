@@ -5,7 +5,14 @@
  * FLR so the stock driver starts from a clean, halted GSP. After resume from
  * suspend it runs again on the card nvidia has suspended, before nvidia resumes it.
  */
+#if __has_include(<linux/aperture.h>)
 #include <linux/aperture.h>
+#elif __has_include(<drm/drm_aperture.h>)
+#include <drm/drm_aperture.h>
+#include <drm/drm_drv.h>
+#else
+#error "gpu_unlock needs Linux 5.15 or later"
+#endif
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/firmware.h>
@@ -28,6 +35,25 @@
  * cold). Both get the same per-field value 8. */
 #define GU_SS0_UNLOCK 0x88888888u
 #define GU_SS1_UNLOCK 0x8u
+
+/* Remove a firmware framebuffer (simpledrm, efifb, vesafb, vgacon) on the
+ * card, as nvidia-drm does on the same kernel. linux/aperture.h arrived in
+ * 6.0; 5.15 to 5.19 have the DRM helper it replaced. Test for the headers,
+ * not the version: enterprise kernels backport them.
+ */
+#if __has_include(<linux/aperture.h>)
+static int remove_firmware_framebuffers(struct pci_dev *pdev)
+{
+	return aperture_remove_conflicting_pci_devices(pdev, "gpu_unlock");
+}
+#else
+static const struct drm_driver gu_drm_driver = { .name = "gpu_unlock" };
+
+static int remove_firmware_framebuffers(struct pci_dev *pdev)
+{
+	return drm_aperture_remove_conflicting_pci_framebuffers(pdev, &gu_drm_driver);
+}
+#endif
 #define BOOTER_MAGIC 0x314c5442u
 #define BOOTER_FILE "gpu-unlock/610.43.03/booter_load_ga102.bin"
 #define V67_FILE "gpu-unlock/610.43.03/v67-ga102-610.43.03.bin"
@@ -1364,7 +1390,7 @@ static int unlock_transaction_reset(struct unlock_transaction_work *work)
 	 * does nothing on a card without one. After resume nvidia-drm already has.
 	 */
 	if (!work->resume) {
-		ret = aperture_remove_conflicting_pci_devices(work->pdev, "gpu_unlock");
+		ret = remove_firmware_framebuffers(work->pdev);
 		if (ret)
 			return GU_RESULT(ret);
 	}

@@ -13,6 +13,8 @@ ubuntu)
 	apt-get install -qy --no-install-recommends make gcc linux-headers-generic ;;
 fedora)
 	dnf install -qy make gcc kernel-devel ;;
+almalinux|rocky|rhel|centos)
+	dnf install -qy make gcc kernel-devel elfutils-libelf-devel ;;
 arch)
 	pacman -Syu --noconfirm --needed make gcc linux-headers ;;
 *)

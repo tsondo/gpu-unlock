@@ -7,8 +7,15 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/suspend.h>
+#include <linux/version.h>
 
 #include "unlock_610.h"
+
+/* pci_dev_lock() is exported from 5.16; before that it is these two locks. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
+#define pci_dev_lock(pdev) (pci_cfg_access_lock(pdev), device_lock(&(pdev)->dev))
+#define pci_dev_unlock(pdev) (device_unlock(&(pdev)->dev), pci_cfg_access_unlock(pdev))
+#endif
 
 static char *targets;
 module_param(targets, charp, 0444);

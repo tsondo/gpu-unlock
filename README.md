@@ -59,6 +59,9 @@ display, and cards passed through to a VM with vfio-pci
 
 ## How to install
 
+The module needs Linux 5.15 or later, or RHEL 9. CI builds it on 5.15 through
+7.2 and on AlmaLinux 9.
+
 First run:
 
 ```sh
